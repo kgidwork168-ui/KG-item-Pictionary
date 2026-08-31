@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>KG Catalogue Admin</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <div>
+        <div class="eyebrow">ADMIN · 管理员</div>
+        <h1>Catalogue Management</h1>
+        <p class="subtitle">材料目录管理</p>
+      </div>
+      <a class="admin-link" href="index.html">← Public View</a>
+    </div>
+  </header>
+
+  <main class="shell admin-shell">
+    <section id="loginSection" class="card login-card">
+      <h2>Admin Login / 管理员登录</h2>
+      <p class="muted">Only approved admin accounts can change catalogue data.</p>
+      <form id="loginForm" class="form-grid single">
+        <label>
+          <span>Email</span>
+          <input id="email" type="email" required autocomplete="username" />
+        </label>
+        <label>
+          <span>Password / 密码</span>
+          <input id="password" type="password" required autocomplete="current-password" />
+        </label>
+        <button class="btn primary" type="submit">Login / 登录</button>
+      </form>
+      <div id="loginMessage" class="message"></div>
+    </section>
+
+    <section id="adminArea" class="hidden">
+      <div class="admin-topbar card">
+        <div>
+          <strong id="adminEmail"></strong>
+          <div class="muted small">Admin access active / 管理员权限已开启</div>
+        </div>
+        <button id="logoutBtn" class="btn ghost">Logout / 登出</button>
+      </div>
+
+      <nav class="admin-tabs">
+        <button class="tab-btn active" data-tab="items">Items / 项目</button>
+        <button class="tab-btn" data-tab="categories">Categories / 分类</button>
+      </nav>
+
+      <section id="tab-items" class="tab-panel">
+        <div class="admin-layout">
+          <section class="card">
+            <div class="section-title-row">
+              <div>
+                <h2 id="itemFormTitle">Add Item / 新增项目</h2>
+                <p class="muted">Photo + bilingual name + size + colour + price</p>
+              </div>
+              <button id="cancelEditBtn" class="btn ghost hidden" type="button">Cancel Edit</button>
+            </div>
+
+            <form id="itemForm" class="form-grid">
+              <input id="itemId" type="hidden" />
+              <input id="existingImagePath" type="hidden" />
+
+              <label>
+                <span>Category / 分类 *</span>
+                <select id="itemCategory" required></select>
+              </label>
+
+              <label>
+                <span>Sort Order / 排序</span>
+                <input id="sortOrder" type="number" value="100" />
+              </label>
+
+              <label>
+                <span>English Name *</span>
+                <input id="nameEn" required placeholder="e.g. Calcium Silicate Board" />
+              </label>
+
+              <label>
+                <span>中文名称 *</span>
+                <input id="nameZh" required placeholder="例如：硅酸钙板" />
+              </label>
+
+              <label>
+                <span>Size / 尺寸</span>
+                <input id="sizeText" placeholder="e.g. 1200 × 2400 × 9 mm" />
+              </label>
+
+              <label>
+                <span>Colours / 颜色</span>
+                <input id="colorsText" placeholder="e.g. White, Green / 白色, 绿色" />
+              </label>
+
+              <label>
+                <span>Price / 价格</span>
+                <input id="price" type="number" min="0" step="0.01" placeholder="0.00" />
+              </label>
+
+              <label>
+                <span>Price Unit / 单位</span>
+                <input id="priceUnit" placeholder="e.g. sheet / 片, box / 箱, pc / 个" />
+              </label>
+
+              <label class="full">
+                <span>Item Photo / 项目图片</span>
+                <input id="imageFile" type="file" accept="image/jpeg,image/png,image/webp" />
+                <small>Recommended: JPG/PNG/WebP, under 5 MB.</small>
+              </label>
+
+              <div id="imagePreviewWrap" class="image-preview-wrap full hidden">
+                <img id="imagePreview" alt="Preview" />
+              </div>
+
+              <div class="full form-actions">
+                <button id="saveItemBtn" class="btn primary" type="submit">Save Item / 保存项目</button>
+              </div>
+            </form>
+            <div id="itemMessage" class="message"></div>
+          </section>
+
+          <section class="card">
+            <div class="section-title-row">
+              <div>
+                <h2>Existing Items / 现有项目</h2>
+                <p id="adminItemCount" class="muted">0 items</p>
+              </div>
+              <input id="adminSearch" class="compact-search" type="search" placeholder="Search / 搜索" />
+            </div>
+            <div id="adminItemsList" class="admin-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="tab-categories" class="tab-panel hidden">
+        <div class="admin-layout">
+          <section class="card">
+            <h2 id="categoryFormTitle">Add Category / 新增分类</h2>
+            <form id="categoryForm" class="form-grid">
+              <input id="categoryId" type="hidden" />
+              <label>
+                <span>English Category *</span>
+                <input id="categoryEn" required placeholder="e.g. Board" />
+              </label>
+              <label>
+                <span>中文分类 *</span>
+                <input id="categoryZh" required placeholder="例如：板材" />
+              </label>
+              <label>
+                <span>Sort Order / 排序</span>
+                <input id="categorySort" type="number" value="100" />
+              </label>
+              <div class="full form-actions">
+                <button class="btn primary" type="submit">Save Category / 保存分类</button>
+                <button id="cancelCategoryEdit" class="btn ghost hidden" type="button">Cancel Edit</button>
+              </div>
+            </form>
+            <div id="categoryMessage" class="message"></div>
+          </section>
+
+          <section class="card">
+            <h2>Categories / 分类</h2>
+            <div id="categoryAdminList" class="admin-list"></div>
+          </section>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
