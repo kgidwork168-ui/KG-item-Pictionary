@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0c5b47" />
+  <title>KG Material Price List | KG 材料价格表</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="shell topbar-inner">
+    <a class="brand" href="index.html"><span class="logo">KG</span><span><b>Material Catalogue</b><small>材料图鉴</small></span></a>
+    <nav class="topnav">
+      <a class="navitem" href="index.html"><span>▦</span><b>Catalogue<small>材料图鉴</small></b></a>
+      <a class="navitem active" href="prices.html"><span>$</span><b>Price List<small>价格表</small></b></a>
+      <a class="navitem admin-link" href="admin.html"><span>⚙</span><b>Admin<small>管理员</small></b></a>
+    </nav>
+  </div>
+</header>
+
+<section class="price-hero">
+  <div class="shell">
+    <p class="kicker pale">MATERIAL PRICE LIST · 材料价格表</p>
+    <h1>One item. Every size, colour & price.</h1>
+    <div class="cn-title pale-text">一个材料，所有尺寸、颜色和价格清楚分开。</div>
+  </div>
+</section>
+
+<main class="shell main-space">
+  <section class="price-guide">
+    <div><b>HAS SIZE + COLOUR</b><span>显示：尺寸 + 颜色 + 价格</span></div>
+    <div><b>ONLY ONE</b><span>没有尺寸或颜色就自动隐藏</span></div>
+    <div><b>NO BOTH</b><span>两样都没有 → 只显示价格</span></div>
+  </section>
+
+  <section class="filter-card sticky-filter">
+    <div class="searchbar"><span>⌕</span><input id="priceSearchInput" type="search" placeholder="Search item / 搜索项目" /><button id="priceClearSearch" class="clear hidden">Clear / 清除</button></div>
+    <div id="priceCategoryChips" class="chips"></div>
+  </section>
+
+  <section class="section-head">
+    <div><p class="kicker">CURRENT PRICE · 当前价格</p><h2 id="priceSectionTitle">All Materials / 全部材料</h2></div>
+    <div class="count-pill"><span id="priceResultCount">0</span> items / 项</div>
+  </section>
+  <div id="priceStatusMessage" class="status">Loading… / 载入中…</div>
+  <section id="priceList" class="price-list"></section>
+  <section id="priceEmptyState" class="empty hidden"><div>$</div><h2>No price item found / 找不到项目</h2><p>Try another material or category.</p></section>
+</main>
+<footer class="footer"><div class="shell footer-row"><div><b>KG Material Price List</b><small>Size + Colour + Price · 尺寸 + 颜色 + 价格</small></div><a href="index.html">← Picture Catalogue / 图片目录</a></div></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script><script src="js/common.js"></script><script src="js/prices.js"></script>
+</body>
+</html>

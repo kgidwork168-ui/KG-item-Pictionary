@@ -3,69 +3,66 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#ffffff" />
+  <meta name="theme-color" content="#0c5b47" />
   <title>KG Material Catalogue | KG 材料图鉴</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-  <header class="site-header">
-    <div class="shell header-inner">
-      <div>
-        <div class="eyebrow">CEILING & PARTITION · 天花与隔墙</div>
-        <h1>KG Material Catalogue</h1>
-        <p class="subtitle">材料图片目录 · English / 中文</p>
+<header class="topbar">
+  <div class="shell topbar-inner">
+    <a class="brand" href="index.html"><span class="logo">KG</span><span><b>Material Catalogue</b><small>材料图鉴</small></span></a>
+    <nav class="topnav">
+      <a class="navitem active" href="index.html"><span>▦</span><b>Catalogue<small>材料图鉴</small></b></a>
+      <a class="navitem" href="prices.html"><span>$</span><b>Price List<small>价格表</small></b></a>
+      <a class="navitem admin-link" href="admin.html"><span>⚙</span><b>Admin<small>管理员</small></b></a>
+    </nav>
+  </div>
+</header>
+
+<section class="catalog-hero">
+  <div class="shell hero-layout">
+    <div>
+      <p class="kicker">CEILING & PARTITION MATERIALS · 天花与隔墙材料</p>
+      <h1>Find the correct material by picture.</h1>
+      <div class="cn-title">看图片、看名称，就能找到正确材料。</div>
+      <p class="hero-text">Made for fast use on site. Big photos, simple categories, English + Chinese names, and one button to check the exact price.</p>
+      <div class="hero-buttons">
+        <a class="button primary" href="#materials">View Materials / 查看材料</a>
+        <a class="button light" href="prices.html">Check Price / 查看价格</a>
       </div>
-      <a class="admin-link" href="admin.html" aria-label="Admin login">Admin</a>
     </div>
-  </header>
+    <div class="hero-art" aria-hidden="true">
+      <div class="board board-a"><i>BOARD</i></div>
+      <div class="board board-b"><i>METAL</i></div>
+      <div class="circle-part">●<span>SCREW</span></div>
+      <div class="hero-sticker"><b>EN + 中文</b><small>Easy to identify</small></div>
+    </div>
+  </div>
+</section>
 
-  <main class="shell">
-    <section class="toolbar card">
-      <label class="search-wrap">
-        <span>Search / 搜索</span>
-        <input id="searchInput" type="search" placeholder="Name, size, colour / 名称、尺寸、颜色" autocomplete="off" />
-      </label>
-      <div class="toolbar-row">
-        <label class="select-wrap">
-          <span>Category / 分类</span>
-          <select id="categorySelect">
-            <option value="">All Categories / 全部分类</option>
-          </select>
-        </label>
-        <label class="select-wrap">
-          <span>Sort / 排序</span>
-          <select id="sortSelect">
-            <option value="custom">Default / 默认</option>
-            <option value="name">Name A–Z / 名称</option>
-            <option value="price_asc">Price Low–High / 价格低至高</option>
-            <option value="price_desc">Price High–Low / 价格高至低</option>
-          </select>
-        </label>
-      </div>
-      <div id="categoryChips" class="chips" aria-label="Category filters"></div>
-    </section>
+<main id="materials" class="shell main-space">
+  <section class="three-steps">
+    <div><strong>1</strong><span><b>Choose Category</b><small>选择分类</small></span></div>
+    <div><strong>2</strong><span><b>Look at Picture</b><small>查看图片</small></span></div>
+    <div><strong>3</strong><span><b>Open Price</b><small>查看对应价格</small></span></div>
+  </section>
 
-    <section class="result-bar">
-      <strong id="resultCount">0 items / 0 项</strong>
-      <span id="statusText">Loading… / 载入中…</span>
-    </section>
+  <section class="filter-card">
+    <div class="searchbar"><span>⌕</span><input id="searchInput" type="search" placeholder="Search material / 搜索材料" /><button id="clearSearch" class="clear hidden">Clear / 清除</button></div>
+    <div id="categoryChips" class="chips"></div>
+  </section>
 
-    <section id="catalogueGrid" class="catalogue-grid" aria-live="polite"></section>
+  <section class="section-head">
+    <div><p class="kicker">PICTURE CATALOGUE · 图片目录</p><h2 id="sectionTitle">All Materials / 全部材料</h2></div>
+    <div class="count-pill"><span id="resultCount">0</span> items / 项</div>
+  </section>
+  <div id="statusMessage" class="status">Loading… / 载入中…</div>
+  <section id="catalogueGrid" class="catalog-grid"></section>
+  <section id="emptyState" class="empty hidden"><div>⌕</div><h2>No material found / 找不到材料</h2><p>Try another name or category.<br/>尝试其他名称或分类。</p></section>
+</main>
 
-    <section id="emptyState" class="empty-state card hidden">
-      <div class="empty-icon">⌕</div>
-      <h2>No matching item / 没有找到项目</h2>
-      <p>Try another name, category, size or colour.<br/>可尝试其他名称、分类、尺寸或颜色。</p>
-    </section>
-  </main>
-
-  <footer class="site-footer shell">
-    <span>KG Material Catalogue · Public view only / 公开只读</span>
-  </footer>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js"></script>
-  <script src="js/common.js"></script>
-  <script src="js/catalog.js"></script>
+<footer class="footer"><div class="shell footer-row"><div><b>KG Material Catalogue</b><small>Ceiling & Partition · 天花与隔墙</small></div><a href="prices.html">Price List / 价格表 →</a></div></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script><script src="js/common.js"></script><script src="js/catalog.js"></script>
 </body>
 </html>
