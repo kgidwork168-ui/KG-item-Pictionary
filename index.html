@@ -3,87 +3,80 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0e5a45">
-  <title>KG Material Pictionary | KG 材料图鉴</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <meta name="theme-color" content="#0b3531">
+  <title>KG Material Pictionary | 材料图鉴</title>
+  <link rel="stylesheet" href="css/app.css">
 </head>
 <body data-show-price="false">
-<header class="topbar">
-  <div class="shell topbar-inner">
-    <a class="brand" href="index.html">
-      <span class="brand-logo">KG</span>
-      <span><strong>Material Pictionary</strong><small>材料图鉴</small></span>
-    </a>
-    <div class="top-actions"></div>
-  </div>
-</header>
 
-<section class="hero">
-  <div class="shell">
-    <div class="hero-card">
-      <p class="eyebrow">MATERIAL PICTIONARY · 材料图鉴</p>
-      <h1>Picture, manual number and every variant — all on one page.</h1>
-      <p class="hero-cn">图片、编号、尺寸、颜色全部直接显示，不用再点进去。</p>
-      <p class="hero-copy">
-        One material picture with all of its manual-number variants directly underneath.
-        Made for fast checking on phone or desktop.
-      </p>
-      <div class="hero-badges">
-        <span class="hero-badge">No extra clicking / 不用点进去</span>
-        <span class="hero-badge">English + 中文</span>
-        <span class="hero-badge">Unique Manual No. / 独立编号</span>
-        <span class="hero-badge">No price / 不显示价格</span>
-      </div>
-    </div>
-  </div>
-</section>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
 
-<main class="shell">
-  <section class="howto">
-    <div class="how-card"><span class="step-no">1</span><div><strong>Search anything</strong><small>搜索任何资料</small></div></div>
-    <div class="how-card"><span class="step-no">2</span><div><strong>Find the picture</strong><small>找到材料图片</small></div></div>
-    <div class="how-card"><span class="step-no">3</span><div><strong>Check Manual No. + Size + Colour</strong><small>直接看编号、尺寸和颜色</small></div></div>
-  </section>
-
-  <section class="control-card sticky-controls">
-    <div class="search-row">
-      <div class="search-box">
-        <span class="search-symbol">⌕</span>
-        <input id="searchInput" type="search" placeholder="Search name, 中文, category, manual no., size, colour / 搜索全部资料" autocomplete="off">
-        <button id="clearSearch" class="clear-search hidden" type="button">Clear / 清除</button>
-      </div>
-    </div>
-    <div id="categoryStrip" class="category-strip"></div>
-  </section>
-
-  <section class="section-head">
+<aside id="sidebar" class="sidebar">
+  <div class="brand">
+    <div class="brand-mark">KG</div>
     <div>
-      <p>PICTURE DIRECTORY · 图片目录</p>
-      <h2 id="sectionTitle">All Materials / 全部材料</h2>
+      <strong>Material Pictionary</strong>
+      <small>材料图鉴</small>
     </div>
-    <div class="count-pill"><span id="itemCount">0</span> items / 项</div>
-  </section>
-
-  <div id="status" class="status">Loading… / 载入中…</div>
-  <section id="catalogueList" class="catalogue-list"></section>
-
-  <section id="emptyState" class="empty hidden">
-    <div class="big">⌕</div>
-    <h2>No material found / 找不到材料</h2>
-    <p>Try another name, manual number, size or colour.<br>尝试其他名称、编号、尺寸或颜色。</p>
-  </section>
-</main>
-
-<footer class="footer">
-  <div class="shell footer-inner">
-    <div><strong>KG Material Pictionary</strong><br>Ceiling & Partition · 天花与隔墙</div>
-    <span>Public no-price version / 公开无价格版</span>
   </div>
-</footer>
+
+  <div class="sidebar-label">CATEGORY / 分类</div>
+  <nav id="categoryNav" class="category-nav">
+    <button class="side-link active" data-category="">
+      <span class="side-icon">▦</span>
+      <span class="side-text"><strong>All Materials</strong><small>全部材料</small></span>
+    </button>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <a class="admin-login" href="admin.html">
+      <span class="side-icon">⌘</span>
+      <span><strong>Admin Login</strong><small>管理员登录</small></span>
+    </a>
+  </div>
+</aside>
+
+<div class="app-main">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <button id="mobileMenu" class="mobile-menu" type="button">☰</button>
+      <div class="page-title">
+        <strong>Material Pictionary</strong>
+        <small>Ceiling & Partition · 天花与隔墙</small>
+      </div>
+
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input id="searchInput" type="search" placeholder="Search name, 中文, category, manual no., size, colour..." autocomplete="off">
+        <button id="clearSearch" class="clear-search hidden" type="button">Clear</button>
+      </div>
+
+      <div class="version-pill ">NO PRICE / 无价格</div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="summary-row">
+      <div>
+        <h1 id="currentCategory">All Materials / 全部材料</h1>
+        <p>Picture + Manual No. + Size + Colour</p>
+      </div>
+      <div class="count"><span id="itemCount">0</span> items / 项</div>
+    </div>
+
+    <div id="status" class="status">Loading… / 载入中…</div>
+    <section id="materialList" class="material-list"></section>
+
+    <section id="emptyState" class="empty-state hidden">
+      <strong>No matching material / 找不到材料</strong>
+      Try another name, category, manual number, size or colour.
+    </section>
+  </main>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/common.js"></script>
-<script src="js/app.js"></script>
+<script src="js/catalogue.js"></script>
 </body>
 </html>
