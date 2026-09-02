@@ -45,6 +45,7 @@
           </div>
           <button class="button button-print" id="printButton" type="button"><span aria-hidden="true">↧</span> Print / Save PDF</button>
           <div class="admin-actions hidden" id="adminActions">
+            <button class="button button-main-admin hidden" id="manageAdminsButton" type="button">Admin Users / 管理员</button>
             <button class="button button-light" id="manageCategoriesButton" type="button">Categories / 分类</button>
             <button class="button button-primary" id="addItemButton" type="button">＋ Add Item / 新增材料</button>
           </div>
@@ -95,11 +96,49 @@
           </div>
           <button class="icon-button" data-close-dialog type="button" aria-label="Close">×</button>
         </div>
-        <label>Email / 电邮<input id="loginEmail" type="email" required autocomplete="username" /></label>
+        <label>Username / 用户名<input id="loginUsername" type="text" required autocomplete="username" autocapitalize="none" placeholder="e.g. chester" /></label>
         <label>Password / 密码<input id="loginPassword" type="password" required autocomplete="current-password" /></label>
         <p class="form-error hidden" id="loginError"></p>
         <button class="button button-primary full" type="submit">Login / 登录</button>
       </form>
+    </dialog>
+
+    <dialog class="modal" id="adminUsersDialog">
+      <div class="modal-card wide">
+        <div class="modal-heading sticky-heading">
+          <div>
+            <span class="eyebrow">MAIN ADMIN ONLY / 仅限主管理员</span>
+            <h2>Admin Users / 管理员账号</h2>
+            <p>Only the Main Admin can add or edit administrator accounts.</p>
+          </div>
+          <button class="icon-button" data-close-dialog type="button" aria-label="Close">×</button>
+        </div>
+
+        <div class="admin-user-layout">
+          <section>
+            <div class="admin-list-heading">
+              <strong>Current Admins / 现有管理员</strong>
+              <button class="button button-light" id="newAdminUserButton" type="button">＋ Add Admin</button>
+            </div>
+            <div class="admin-user-list" id="adminUserList"></div>
+          </section>
+
+          <form class="admin-user-form" id="adminUserForm">
+            <input id="adminUserId" type="hidden" />
+            <h3 id="adminUserFormTitle">Add Admin / 新增管理员</h3>
+            <label>Username / 用户名<input id="adminUsername" required autocomplete="off" autocapitalize="none" placeholder="e.g. workeradmin" /></label>
+            <label>Display Name / 显示名称<input id="adminDisplayName" required autocomplete="off" placeholder="e.g. Office Admin" /></label>
+            <label><span id="adminPasswordLabel">Temporary Password / 临时密码</span><input id="adminPassword" type="password" minlength="8" autocomplete="new-password" /></label>
+            <label class="checkbox-label"><input id="adminIsActive" type="checkbox" checked /> Active account / 启用账号</label>
+            <p class="field-help" id="adminPasswordHelp">Minimum 8 characters. The new admin can log in immediately.</p>
+            <p class="form-error hidden" id="adminUserFormError"></p>
+            <div class="form-footer admin-form-footer">
+              <button class="button button-light hidden" id="cancelAdminEditButton" type="button">Cancel Edit</button>
+              <button class="button button-primary" type="submit">Save Admin / 保存管理员</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </dialog>
 
     <dialog class="modal" id="itemDialog">

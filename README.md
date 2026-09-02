@@ -1,66 +1,85 @@
 # KG Material Pictionary / KG 材料图鉴
 
-One GitHub Pages website with:
+One professional GitHub Pages website with:
 
-- Public picture catalogue with **no prices**
+- Public/client picture catalogue with no prices
 - Search by English, Chinese, category, Manual No., size and colour
 - Category menu on the left
-- Admin Login at the bottom-left
+- Username and password login stored in Supabase
 - Admin editing inside the same page
-- Professional client-facing material presentation
-- Print or save the material collection as PDF
+- Main Admin can add and edit other admin users
+- Regular admins can edit the Pictionary but cannot manage accounts
+- Print or save the client material collection as PDF
 - Picture upload to Supabase Storage
-- Every variant can have its own unique Manual No., size and colour
-- Size and colour may be left blank
+- Unique Manual No. for every variant
 
-There is no separate `admin.html` and no price website.
+There is no email login, no separate `admin.html` and no price website.
 
-## 1. Set up Supabase
+## Permissions
+
+| User | View catalogue | Edit Pictionary | Add/edit admin users |
+|---|---:|---:|---:|
+| Public/client | Yes | No | No |
+| Admin | Yes | Yes | No |
+| Main Admin (`chester`) | Yes | Yes | Yes |
+
+The rules are checked by the secure Supabase function. Public visitors cannot bypass them by changing the webpage.
+
+## 1. Install the database
 
 1. Open your Supabase project.
 2. Open **SQL Editor**.
-3. Copy everything from `supabase-setup.sql` and click **Run**.
-4. Go to **Authentication → Users → Add user** and create the admin email and password.
-5. Copy the new user's UUID.
-6. Run this in SQL Editor, replacing the example UUID:
+3. Open `supabase-setup.sql` from this folder.
+4. Copy everything, paste it into SQL Editor and press **Run**.
 
-```sql
-insert into public.admins (user_id)
-values ('PASTE-AUTH-USER-UUID-HERE');
+## 2. Create Main Admin `chester`
+
+No email address is required.
+
+1. Open `main-admin-setup.sql`.
+2. Replace `CHANGE_TO_YOUR_MAIN_ADMIN_PASSWORD` with the Main Admin password.
+3. Copy the SQL into the Supabase SQL Editor.
+4. Press **Run**.
+5. Do not upload the edited copy containing the password to public GitHub.
+
+Supabase stores only the protected password hash. The readable password is not saved in the website code or database.
+
+## 3. Deploy the secure login function
+
+The Pictionary uses one protected Supabase Edge Function for login, account management, material editing and image-upload permission.
+
+From this project folder:
+
+```bash
+supabase login
+supabase link --project-ref bvfjiequaoqnrglytvfp
+supabase functions deploy pictionary-admin
 ```
 
-The setup SQL is safe for the earlier database: it adds missing Manual No. and colour columns before creating the unique Manual No. rule. Existing price columns may remain in Supabase, but this website never requests, edits, searches or displays them.
+The Supabase Service Role key stays inside Supabase. Never place it in `config.js`, GitHub or any browser file.
 
-## 2. Connect the website
+## 4. Supabase connection
 
-Open `config.js` and replace:
+`config.js` is already connected using the supplied publishable key. This key is intended for the browser; the database and function permission checks protect private actions.
 
-```js
-SUPABASE_URL: "YOUR_SUPABASE_PROJECT_URL",
-SUPABASE_ANON_KEY: "YOUR_SUPABASE_PUBLISHABLE_KEY"
-```
+## 5. Publish on GitHub Pages
 
-Use only the Supabase **Publishable/anon key**. Never use the `service_role` key in GitHub.
-
-## 3. Publish on GitHub Pages
-
-1. Create one new GitHub repository.
-2. Upload every file and folder from this project.
+1. Create one GitHub repository.
+2. Upload every file and folder from this project. Use the untouched `main-admin-setup.sql` containing the placeholder, not a copy containing the real password.
 3. Open **Settings → Pages**.
 4. Under **Build and deployment**, choose **GitHub Actions**.
-5. The included workflow publishes the site automatically.
+5. The included workflow publishes the website automatically.
 
-Your website will be:
+Your website address will look like:
 
 `https://YOUR-GITHUB-NAME.github.io/YOUR-REPOSITORY-NAME/`
 
-## How to use
+## Using the website
 
-- Public user: open website, search or choose a category, and view all item details.
-- Admin: press **Admin Login / 管理员登录** at the bottom-left.
-- After login: use **Add Item**, **Categories**, or the edit/delete buttons on an item.
-- Press the same bottom-left button to log out.
-
-## Database safety
-
-Public users have read-only access through Supabase Row Level Security. Only user UUIDs entered in the `admins` table can add, edit, delete or upload pictures.
+- Client: browse or search the material list. No login is required.
+- Admin: press **Admin / 管理员登录** at the bottom-left and enter username/password.
+- Admin: add, edit or delete categories, materials, pictures and variants.
+- Main Admin: press **Admin Users / 管理员** to add or edit regular administrators.
+- Main Admin can change a regular admin's username, display name, password or active status.
+- Regular admins cannot see or use the Admin Users function.
+- Admin login automatically expires after 12 hours, and repeated wrong passwords are temporarily blocked.

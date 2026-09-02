@@ -5,7 +5,7 @@
   const configured = config.SUPABASE_URL && !config.SUPABASE_URL.includes("YOUR_") && config.SUPABASE_ANON_KEY && !config.SUPABASE_ANON_KEY.includes("YOUR_");
   const db = configured ? window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY) : null;
 
-  const state = { categories: [], products: [], selectedCategory: "all", query: "", session: null, isAdmin: false, demo: !configured };
+  const state = { categories: [], products: [], selectedCategory: "all", query: "", adminToken: "", adminProfile: null, isAdmin: false, isMainAdmin: false, adminUsers: [], demo: !configured };
   const el = (id) => document.getElementById(id);
   const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
   const normalise = (value) => String(value || "").trim().toLowerCase();
@@ -47,22 +47,25 @@
       renderAll();
       return;
     }
-    const { data: { session } } = await db.auth.getSession();
-    state.session = session;
+    state.adminToken = sessionStorage.getItem("kg_admin_session") || "";
     await checkAdmin();
     await loadData();
-    db.auth.onAuthStateChange(async (_event, sessionNow) => {
-      state.session = sessionNow;
-      await checkAdmin();
-      renderAdminState();
-    });
   }
 
   async function checkAdmin() {
     state.isAdmin = false;
-    if (!state.session) return;
-    const { data, error } = await db.from("admins").select("user_id").eq("user_id", state.session.user.id).maybeSingle();
-    state.isAdmin = !error && Boolean(data);
+    state.isMainAdmin = false;
+    state.adminProfile = null;
+    if (!state.adminToken) return;
+    try {
+      const result = await callAdminFunction({ action: "me" });
+      state.adminProfile = result.profile || null;
+      state.isAdmin = Boolean(state.adminProfile);
+      state.isMainAdmin = Boolean(state.adminProfile?.is_main_admin);
+    } catch (_) {
+      sessionStorage.removeItem("kg_admin_session");
+      state.adminToken = "";
+    }
   }
 
   async function loadData() {
@@ -174,7 +177,9 @@
 
   function renderAdminState() {
     el("adminActions").classList.toggle("hidden", !state.isAdmin);
-    el("adminButtonText").innerHTML = state.isAdmin ? "Logout Admin<br><small>退出管理员</small>" : "Admin<br><small>管理员登录</small>";
+    el("manageAdminsButton").classList.toggle("hidden", !state.isMainAdmin);
+    const signedInName = state.adminProfile?.display_name || state.adminProfile?.username || "Admin";
+    el("adminButtonText").innerHTML = state.isAdmin ? `${escapeHtml(signedInName)}<br><small>Logout / 退出</small>` : "Admin<br><small>管理员登录</small>";
   }
 
   function bindEvents() {
@@ -199,6 +204,7 @@
     el("adminButton").addEventListener("click", handleAdminButton);
     el("loginForm").addEventListener("submit", login);
     el("addItemButton").addEventListener("click", () => openItemForm());
+    el("manageAdminsButton").addEventListener("click", openAdminUsers);
     el("manageCategoriesButton").addEventListener("click", openCategoryForm);
     el("addVariantButton").addEventListener("click", () => addVariantRow());
     el("variantEditor").addEventListener("click", (event) => { if (event.target.closest("[data-remove-variant]")) event.target.closest(".variant-edit-row").remove(); });
@@ -207,6 +213,13 @@
     el("categoryForm").addEventListener("submit", saveCategories);
     el("newCategoryButton").addEventListener("click", () => addCategoryRow());
     el("categoryEditor").addEventListener("click", (event) => { if (event.target.closest("[data-remove-category]")) event.target.closest(".category-edit-row").remove(); });
+    el("newAdminUserButton").addEventListener("click", resetAdminUserForm);
+    el("cancelAdminEditButton").addEventListener("click", resetAdminUserForm);
+    el("adminUserForm").addEventListener("submit", saveAdminUser);
+    el("adminUserList").addEventListener("click", (event) => {
+      const edit = event.target.closest("[data-edit-admin]");
+      if (edit) editAdminUser(edit.dataset.editAdmin);
+    });
     document.querySelectorAll("[data-close-dialog]").forEach((button) => button.addEventListener("click", () => button.closest("dialog").close()));
   }
 
@@ -218,9 +231,10 @@
 
   async function handleAdminButton() {
     if (state.demo) { showNotice("Connect Supabase in config.js before using Admin Login."); return; }
-    if (state.session) {
-      await db.auth.signOut();
-      state.session = null; state.isAdmin = false; renderAll();
+    if (state.adminToken) {
+      try { await callAdminFunction({ action: "logout" }); } catch (_) { /* local logout still completes */ }
+      sessionStorage.removeItem("kg_admin_session");
+      state.adminToken = ""; state.adminProfile = null; state.isAdmin = false; state.isMainAdmin = false; renderAll();
     } else {
       el("loginError").classList.add("hidden"); el("loginDialog").showModal();
     }
@@ -229,14 +243,130 @@
   async function login(event) {
     event.preventDefault();
     const errorBox = el("loginError"); errorBox.classList.add("hidden");
-    const { data, error } = await db.auth.signInWithPassword({ email: el("loginEmail").value.trim(), password: el("loginPassword").value });
-    if (error) { errorBox.textContent = error.message; errorBox.classList.remove("hidden"); return; }
-    state.session = data.session; await checkAdmin();
-    if (!state.isAdmin) { await db.auth.signOut(); errorBox.textContent = "This account is not an approved admin. / 此账号不是管理员"; errorBox.classList.remove("hidden"); return; }
-    el("loginDialog").close(); el("loginForm").reset(); renderAll();
+    const username = normalise(el("loginUsername").value);
+    try {
+      const result = await callAdminFunction({ action: "login", username, password: el("loginPassword").value }, false);
+      state.adminToken = result.session_token;
+      state.adminProfile = result.profile;
+      state.isAdmin = true;
+      state.isMainAdmin = Boolean(result.profile?.is_main_admin);
+      sessionStorage.setItem("kg_admin_session", state.adminToken);
+      el("loginDialog").close(); el("loginForm").reset(); renderAll();
+    } catch (error) {
+      errorBox.textContent = error.message || "Login failed. / 登录失败";
+      errorBox.classList.remove("hidden");
+    }
   }
 
   function requireAdmin() { if (!state.isAdmin) { showNotice("Admin login required. / 请先登录管理员账号"); return false; } return true; }
+
+  function requireMainAdmin() {
+    if (!state.isMainAdmin) { showNotice("Only the Main Admin can manage admin users. / 只有主管理员可以管理账号"); return false; }
+    return true;
+  }
+
+  async function callAdminFunction(body, useSession = true) {
+    const headers = useSession && state.adminToken ? { "x-admin-session": state.adminToken } : {};
+    const { data, error } = await db.functions.invoke("pictionary-admin", { body, headers });
+    if (error) {
+      let message = error.message || "Admin user service is unavailable.";
+      if (error.context && typeof error.context.json === "function") {
+        try { message = (await error.context.json())?.error || message; } catch (_) { /* keep the safe fallback */ }
+      }
+      throw new Error(message);
+    }
+    if (!data?.ok) throw new Error(data?.error || "Unable to manage admin user.");
+    return data;
+  }
+
+  async function openAdminUsers() {
+    if (!requireMainAdmin()) return;
+    resetAdminUserForm();
+    el("adminUserList").innerHTML = '<div class="admin-loading">Loading admin users…</div>';
+    el("adminUsersDialog").showModal();
+    await loadAdminUsers();
+  }
+
+  async function loadAdminUsers() {
+    try {
+      const result = await callAdminFunction({ action: "list" });
+      state.adminUsers = result.admins || [];
+      renderAdminUsers();
+    } catch (error) {
+      el("adminUserList").innerHTML = `<p class="form-error">${escapeHtml(error.message)}</p>`;
+    }
+  }
+
+  function renderAdminUsers() {
+    if (!state.adminUsers.length) {
+      el("adminUserList").innerHTML = '<div class="admin-loading">No administrator found.</div>';
+      return;
+    }
+    el("adminUserList").innerHTML = state.adminUsers.map((admin) => `
+      <article class="admin-user-row">
+        <div class="admin-avatar">${escapeHtml((admin.display_name || admin.username || "A").slice(0, 1).toUpperCase())}</div>
+        <div class="admin-user-details">
+          <strong>${escapeHtml(admin.display_name || admin.username)}</strong>
+          <span>@${escapeHtml(admin.username || "admin")}</span>
+        </div>
+        <span class="role-badge ${admin.is_main_admin ? "main" : admin.is_active ? "active" : "inactive"}">${admin.is_main_admin ? "Main Admin" : admin.is_active ? "Admin" : "Inactive"}</span>
+        ${admin.is_main_admin ? "" : `<button class="icon-button" data-edit-admin="${escapeHtml(admin.user_id)}" type="button" title="Edit admin">✎</button>`}
+      </article>`).join("");
+  }
+
+  function resetAdminUserForm() {
+    el("adminUserForm").reset();
+    el("adminUserId").value = "";
+    el("adminIsActive").checked = true;
+    el("adminPassword").required = true;
+    el("adminUserFormTitle").textContent = "Add Admin / 新增管理员";
+    el("adminPasswordLabel").textContent = "Temporary Password / 临时密码";
+    el("adminPasswordHelp").textContent = "Minimum 8 characters. The new admin can log in immediately.";
+    el("cancelAdminEditButton").classList.add("hidden");
+    el("adminUserFormError").classList.add("hidden");
+  }
+
+  function editAdminUser(userId) {
+    const admin = state.adminUsers.find((item) => item.user_id === userId);
+    if (!admin || admin.is_main_admin) return;
+    el("adminUserId").value = admin.user_id;
+    el("adminUsername").value = admin.username || "";
+    el("adminDisplayName").value = admin.display_name || "";
+    el("adminPassword").value = "";
+    el("adminPassword").required = false;
+    el("adminIsActive").checked = admin.is_active;
+    el("adminUserFormTitle").textContent = "Edit Admin / 编辑管理员";
+    el("adminPasswordLabel").textContent = "New Password / 新密码（选填）";
+    el("adminPasswordHelp").textContent = "Leave password blank to keep the current password.";
+    el("cancelAdminEditButton").classList.remove("hidden");
+    el("adminUserFormError").classList.add("hidden");
+    el("adminUsername").focus();
+  }
+
+  async function saveAdminUser(event) {
+    event.preventDefault();
+    if (!requireMainAdmin()) return;
+    const errorBox = el("adminUserFormError");
+    errorBox.classList.add("hidden");
+    const userId = el("adminUserId").value;
+    const password = el("adminPassword").value;
+    const body = {
+      action: userId ? "update" : "create",
+      user_id: userId || undefined,
+      username: normalise(el("adminUsername").value),
+      display_name: el("adminDisplayName").value.trim(),
+      password: password || undefined,
+      is_active: el("adminIsActive").checked
+    };
+    try {
+      await callAdminFunction(body);
+      resetAdminUserForm();
+      await loadAdminUsers();
+    } catch (error) {
+      errorBox.textContent = error.message || String(error);
+      errorBox.classList.remove("hidden");
+    }
+  }
 
   function handleCardAction(event) {
     const edit = event.target.closest("[data-edit-item]");
@@ -272,9 +402,10 @@
     if (!file) return el("itemImageUrl").value.trim();
     const extension = (file.name.split(".").pop() || "jpg").toLowerCase();
     const path = `${productId}/${Date.now()}-${uid()}.${extension}`;
-    const { error } = await db.storage.from(config.IMAGE_BUCKET || "product-images").upload(path, file, { cacheControl: "3600", upsert: false });
+    const signed = await callAdminFunction({ action: "create-upload-url", path });
+    const { error } = await db.storage.from(config.IMAGE_BUCKET || "product-images").uploadToSignedUrl(signed.path, signed.token, file, { cacheControl: "3600" });
     if (error) throw error;
-    return db.storage.from(config.IMAGE_BUCKET || "product-images").getPublicUrl(path).data.publicUrl;
+    return db.storage.from(config.IMAGE_BUCKET || "product-images").getPublicUrl(signed.path).data.publicUrl;
   }
 
   async function saveItem(event) {
@@ -297,22 +428,15 @@
         id: productId, category_id: el("itemCategory").value, name_en: el("itemNameEn").value.trim(), name_zh: el("itemNameZh").value.trim() || null,
         image_url: imageUrl || null, sort_order: Number(el("itemSortOrder").value || 0), is_active: true
       };
-      const { error: productError } = await db.from("products").upsert(productPayload);
-      if (productError) throw productError;
-      const { error: deleteError } = await db.from("product_variants").delete().eq("product_id", productId);
-      if (deleteError) throw deleteError;
-      if (variants.length) {
-        const { error: variantError } = await db.from("product_variants").insert(variants.map((variant) => ({ ...variant, product_id: productId })));
-        if (variantError) throw variantError;
-      }
+      await callAdminFunction({ action: "save-item", product: productPayload, variants });
       el("itemDialog").close(); hideNotice(); await loadData();
     } catch (error) { errorBox.textContent = error.message || String(error); errorBox.classList.remove("hidden"); }
   }
 
   async function deleteItem(productId) {
     if (!requireAdmin() || !confirm("Delete this item and all its variants? / 删除此材料和全部规格？")) return;
-    const { error } = await db.from("products").delete().eq("id", productId);
-    if (error) showNotice(error.message); else await loadData();
+    try { await callAdminFunction({ action: "delete-item", product_id: productId }); await loadData(); }
+    catch (error) { showNotice(error.message || String(error)); }
   }
 
   function openCategoryForm() {
@@ -339,12 +463,7 @@
     }));
     const removedIds = state.categories.filter((category) => !payload.some((item) => item.id === category.id)).map((category) => category.id);
     try {
-      const { error: upsertError } = await db.from("categories").upsert(payload);
-      if (upsertError) throw upsertError;
-      if (removedIds.length) {
-        const { error: removeError } = await db.from("categories").delete().in("id", removedIds);
-        if (removeError) throw new Error("A category containing materials cannot be deleted. Move or delete those materials first.");
-      }
+      await callAdminFunction({ action: "save-categories", categories: payload, removed_ids: removedIds });
       el("categoryDialog").close(); await loadData();
     } catch (error) { errorBox.textContent = error.message || String(error); errorBox.classList.remove("hidden"); }
   }
