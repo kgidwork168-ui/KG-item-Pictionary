@@ -1,82 +1,186 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0b3531">
-  <title>KG Material Pictionary | 材料图鉴</title>
-  <link rel="stylesheet" href="css/app.css">
-</head>
-<body data-show-price="false">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b3530" />
+    <meta name="description" content="KG Plasterceil ceiling and partition material collection." />
+    <title>KG Plasterceil | Material Collection</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar" aria-label="Material categories">
+        <div class="brand">
+          <div class="brand-mark">KG</div>
+          <div>
+            <strong>KG Plasterceil</strong>
+            <span>Material Collection / 材料系列</span>
+          </div>
+        </div>
 
-<div id="sidebarOverlay" class="sidebar-overlay"></div>
+        <div class="sidebar-section-label">BROWSE / 浏览</div>
+        <nav class="category-nav" id="categoryNav"></nav>
 
-<aside id="sidebar" class="sidebar">
-  <div class="brand">
-    <div class="brand-mark">KG</div>
-    <div>
-      <strong>Material Pictionary</strong>
-      <small>材料图鉴</small>
+        <div class="sidebar-note">
+          <span aria-hidden="true">i</span>
+          <p>Material images and specifications are for reference.<br /><small>材料图片与规格仅供参考。</small></p>
+        </div>
+
+        <button class="admin-login" id="adminButton" type="button">
+          <span class="admin-icon" aria-hidden="true">⌘</span>
+          <span id="adminButtonText">Admin<br /><small>管理员登录</small></span>
+        </button>
+      </aside>
+
+      <button class="sidebar-backdrop" id="sidebarBackdrop" aria-label="Close categories"></button>
+
+      <main class="main-content">
+        <header class="topbar">
+          <button class="menu-button" id="menuButton" type="button" aria-label="Open categories">☰</button>
+          <div class="page-title">
+            <span class="page-kicker">KG PLASTERCEIL</span>
+            <h1>Material Collection <span>/ 材料目录</span></h1>
+            <p>Ceiling & partition materials / 天花与隔墙材料</p>
+          </div>
+          <button class="button button-print" id="printButton" type="button"><span aria-hidden="true">↧</span> Print / Save PDF</button>
+          <div class="admin-actions hidden" id="adminActions">
+            <button class="button button-light" id="manageCategoriesButton" type="button">Categories / 分类</button>
+            <button class="button button-primary" id="addItemButton" type="button">＋ Add Item / 新增材料</button>
+          </div>
+        </header>
+
+        <section class="catalogue-banner">
+          <div>
+            <span class="banner-label">MATERIAL REFERENCE / 材料参考</span>
+            <h2 id="catalogueHeading">All Materials / 全部材料</h2>
+            <p>Choose a category or search by material name, Manual No., size or colour.</p>
+          </div>
+          <div class="catalogue-summary">
+            <div><strong id="materialTotal">0</strong><span>Materials<br />材料</span></div>
+            <div><strong id="variantTotal">0</strong><span>Specifications<br />规格</span></div>
+          </div>
+        </section>
+
+        <section class="search-panel" aria-label="Search materials">
+          <label class="search-box">
+            <span aria-hidden="true">⌕</span>
+            <input id="searchInput" type="search" autocomplete="off" placeholder="Search material, 中文名称, Manual No., size or colour…" />
+            <button class="clear-search hidden" id="clearSearchButton" type="button" aria-label="Clear search">×</button>
+          </label>
+          <select id="mobileCategorySelect" class="mobile-category" aria-label="Choose category"></select>
+        </section>
+
+        <div class="notice hidden" id="notice" role="status"></div>
+        <div class="results-bar">
+          <p id="resultCount">Loading materials…</p>
+          <span>No prices shown / 不显示价格</span>
+        </div>
+        <section class="materials-grid" id="materialsGrid" aria-live="polite"></section>
+
+        <footer class="catalogue-footer">
+          <strong>KG Plasterceil</strong>
+          <span>Ceiling & Partition Material Collection / 天花与隔墙材料目录</span>
+        </footer>
+      </main>
     </div>
-  </div>
 
-  <div class="sidebar-label">CATEGORY / 分类</div>
-  <nav id="categoryNav" class="category-nav">
-    <button class="side-link active" data-category="">
-      <span class="side-icon">▦</span>
-      <span class="side-text"><strong>All Materials</strong><small>全部材料</small></span>
-    </button>
-  </nav>
+    <dialog class="modal" id="loginDialog">
+      <form class="modal-card compact" id="loginForm">
+        <div class="modal-heading">
+          <div>
+            <span class="eyebrow">ADMIN ONLY / 仅限管理员</span>
+            <h2>Sign in to edit</h2>
+            <p>Public users can only view the catalogue.</p>
+          </div>
+          <button class="icon-button" data-close-dialog type="button" aria-label="Close">×</button>
+        </div>
+        <label>Email / 电邮<input id="loginEmail" type="email" required autocomplete="username" /></label>
+        <label>Password / 密码<input id="loginPassword" type="password" required autocomplete="current-password" /></label>
+        <p class="form-error hidden" id="loginError"></p>
+        <button class="button button-primary full" type="submit">Login / 登录</button>
+      </form>
+    </dialog>
 
-  <div class="sidebar-bottom">
-    <a class="admin-login" href="admin.html">
-      <span class="side-icon">⌘</span>
-      <span><strong>Admin Login</strong><small>管理员登录</small></span>
-    </a>
-  </div>
-</aside>
+    <dialog class="modal" id="itemDialog">
+      <form class="modal-card wide" id="itemForm">
+        <div class="modal-heading sticky-heading">
+          <div>
+            <span class="eyebrow">MATERIAL / 材料</span>
+            <h2 id="itemDialogTitle">Add Item / 新增材料</h2>
+          </div>
+          <button class="icon-button" data-close-dialog type="button" aria-label="Close">×</button>
+        </div>
 
-<div class="app-main">
-  <header class="topbar">
-    <div class="topbar-inner">
-      <button id="mobileMenu" class="mobile-menu" type="button">☰</button>
-      <div class="page-title">
-        <strong>Material Pictionary</strong>
-        <small>Ceiling & Partition · 天花与隔墙</small>
+        <input id="itemId" type="hidden" />
+        <div class="form-grid">
+          <label>Category / 分类<select id="itemCategory" required></select></label>
+          <label>Sort No. / 排列<input id="itemSortOrder" type="number" value="0" /></label>
+          <label>English Name<input id="itemNameEn" required /></label>
+          <label>中文名称<input id="itemNameZh" /></label>
+          <label class="full-width">Item Picture / 材料图片<input id="itemImage" type="file" accept="image/png,image/jpeg,image/webp" /></label>
+          <label class="full-width">Existing Image URL / 现有图片网址<input id="itemImageUrl" type="url" placeholder="Filled automatically after upload" /></label>
+        </div>
+
+        <div class="variant-heading">
+          <div>
+            <h3>Manual No., Size & Colour</h3>
+            <p>Each variant must use a different Manual No. Size and colour can be left blank.</p>
+          </div>
+          <button class="button button-light" id="addVariantButton" type="button">＋ Add Variant</button>
+        </div>
+        <div class="variant-editor" id="variantEditor"></div>
+
+        <p class="form-error hidden" id="itemFormError"></p>
+        <div class="form-footer">
+          <button class="button button-light" data-close-dialog type="button">Cancel / 取消</button>
+          <button class="button button-primary" type="submit">Save Item / 保存材料</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="modal" id="categoryDialog">
+      <form class="modal-card" id="categoryForm">
+        <div class="modal-heading">
+          <div>
+            <span class="eyebrow">CATEGORIES / 分类</span>
+            <h2>Manage Categories</h2>
+          </div>
+          <button class="icon-button" data-close-dialog type="button" aria-label="Close">×</button>
+        </div>
+        <div class="category-editor" id="categoryEditor"></div>
+        <button class="button button-light full" id="newCategoryButton" type="button">＋ Add Category / 新增分类</button>
+        <p class="form-error hidden" id="categoryFormError"></p>
+        <div class="form-footer">
+          <button class="button button-light" data-close-dialog type="button">Cancel / 取消</button>
+          <button class="button button-primary" type="submit">Save Categories / 保存分类</button>
+        </div>
+      </form>
+    </dialog>
+
+    <template id="variantRowTemplate">
+      <div class="variant-edit-row">
+        <label>Manual No. / 编号<input data-field="manual_number" required placeholder="e.g. CS001" /></label>
+        <label>Size / 尺寸<input data-field="size" placeholder="Optional" /></label>
+        <label>Colour / 颜色<input data-field="colour_en" placeholder="Optional" /></label>
+        <label>中文颜色<input data-field="colour_zh" placeholder="选填" /></label>
+        <label>Sort<input data-field="sort_order" type="number" value="0" /></label>
+        <button class="danger-icon" data-remove-variant type="button" aria-label="Remove variant">×</button>
       </div>
+    </template>
 
-      <div class="search-wrap">
-        <span class="search-icon">⌕</span>
-        <input id="searchInput" type="search" placeholder="Search name, 中文, category, manual no., size, colour..." autocomplete="off">
-        <button id="clearSearch" class="clear-search hidden" type="button">Clear</button>
+    <template id="categoryRowTemplate">
+      <div class="category-edit-row">
+        <input data-category-id type="hidden" />
+        <label>English<input data-category-field="name_en" required /></label>
+        <label>中文<input data-category-field="name_zh" /></label>
+        <label>Sort<input data-category-field="sort_order" type="number" value="0" /></label>
+        <button class="danger-icon" data-remove-category type="button" aria-label="Remove category">×</button>
       </div>
+    </template>
 
-      <div class="version-pill ">NO PRICE / 无价格</div>
-    </div>
-  </header>
-
-  <main class="content">
-    <div class="summary-row">
-      <div>
-        <h1 id="currentCategory">All Materials / 全部材料</h1>
-        <p>Picture + Manual No. + Size + Colour</p>
-      </div>
-      <div class="count"><span id="itemCount">0</span> items / 项</div>
-    </div>
-
-    <div id="status" class="status">Loading… / 载入中…</div>
-    <section id="materialList" class="material-list"></section>
-
-    <section id="emptyState" class="empty-state hidden">
-      <strong>No matching material / 找不到材料</strong>
-      Try another name, category, manual number, size or colour.
-    </section>
-  </main>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js"></script>
-<script src="js/common.js"></script>
-<script src="js/catalogue.js"></script>
-</body>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+  </body>
 </html>

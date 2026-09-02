@@ -1,75 +1,66 @@
-# KG Material Pictionary — NO PRICE
+# KG Material Pictionary / KG 材料图鉴
 
-This is one of TWO separate GitHub Pages repositories.
+One GitHub Pages website with:
 
-## Layout
+- Public picture catalogue with **no prices**
+- Search by English, Chinese, category, Manual No., size and colour
+- Category menu on the left
+- Admin Login at the bottom-left
+- Admin editing inside the same page
+- Professional client-facing material presentation
+- Print or save the material collection as PDF
+- Picture upload to Supabase Storage
+- Every variant can have its own unique Manual No., size and colour
+- Size and colour may be left blank
 
-The website now follows an app-style layout:
-- Dark category navigation on the LEFT
-- Search bar at the TOP
-- Admin Login at the BOTTOM-LEFT
-- Materials displayed as clean rows
-- Picture is visible immediately
-- All variants are visible immediately
-- NO click into an item is needed
+There is no separate `admin.html` and no price website.
 
-Each variant can have:
-- Unique Manual No.
-- Size (optional)
-- Colour (optional)
-- Price (optional)
-- Unit (optional)
+## 1. Set up Supabase
 
-This site NEVER requests `price` or `price_unit` in its Supabase catalogue query. It displays every other item/variant detail but no price.
-
-## Shared Supabase
-
-Both GitHub repositories MUST use the SAME values inside `js/config.js`:
-
-- `SUPABASE_URL`
-- `SUPABASE_KEY`
-
-That means an Admin edit is made once and both websites update from the same database.
-
-Example:
-Admin changes CS001 from `9mm` to `9.5mm`.
-- Price website shows `9.5mm`
-- No-price website also shows `9.5mm`
-- Only the price website displays the price.
-
-## Setup
-
-1. Supabase -> SQL Editor
-2. Run `supabase-setup-or-upgrade.sql`
-3. Supabase -> Authentication -> Users -> Add User
-4. Copy the User UUID
-5. Run:
+1. Open your Supabase project.
+2. Open **SQL Editor**.
+3. Copy everything from `supabase-setup.sql` and click **Run**.
+4. Go to **Authentication → Users → Add user** and create the admin email and password.
+5. Copy the new user's UUID.
+6. Run this in SQL Editor, replacing the example UUID:
 
 ```sql
-insert into public.admin_users(user_id)
-values('PASTE-ADMIN-USER-UUID-HERE')
-on conflict do nothing;
+insert into public.admins (user_id)
+values ('PASTE-AUTH-USER-UUID-HERE');
 ```
 
-6. Supabase -> Project Settings -> API
-7. Put the SAME Project URL + Publishable Key in `js/config.js` for BOTH repositories.
-8. Upload each repository to its own GitHub repository.
-9. GitHub -> Settings -> Pages -> Deploy from branch -> `main` -> `/(root)`.
+The setup SQL is safe for the earlier database: it adds missing Manual No. and colour columns before creating the unique Manual No. rule. Existing price columns may remain in Supabase, but this website never requests, edits, searches or displays them.
 
-## Admin
+## 2. Connect the website
 
-Open `admin.html` or click **Admin Login / 管理员登录** at the bottom-left.
+Open `config.js` and replace:
 
-Admin can:
-- Add/edit categories
-- Add/edit/delete material items
-- Upload or replace image
-- Remove image
-- Add unlimited variants
-- Edit Manual No.
-- Edit Size
-- Edit Colour
-- Edit Price
-- Edit Unit
+```js
+SUPABASE_URL: "YOUR_SUPABASE_PROJECT_URL",
+SUPABASE_ANON_KEY: "YOUR_SUPABASE_PUBLISHABLE_KEY"
+```
 
-Manual No. is checked as unique.
+Use only the Supabase **Publishable/anon key**. Never use the `service_role` key in GitHub.
+
+## 3. Publish on GitHub Pages
+
+1. Create one new GitHub repository.
+2. Upload every file and folder from this project.
+3. Open **Settings → Pages**.
+4. Under **Build and deployment**, choose **GitHub Actions**.
+5. The included workflow publishes the site automatically.
+
+Your website will be:
+
+`https://YOUR-GITHUB-NAME.github.io/YOUR-REPOSITORY-NAME/`
+
+## How to use
+
+- Public user: open website, search or choose a category, and view all item details.
+- Admin: press **Admin Login / 管理员登录** at the bottom-left.
+- After login: use **Add Item**, **Categories**, or the edit/delete buttons on an item.
+- Press the same bottom-left button to log out.
+
+## Database safety
+
+Public users have read-only access through Supabase Row Level Security. Only user UUIDs entered in the `admins` table can add, edit, delete or upload pictures.

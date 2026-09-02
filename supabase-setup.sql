@@ -1,108 +1,145 @@
--- KG MATERIAL CATALOGUE PRO - SUPABASE SETUP
--- Run once in Supabase -> SQL Editor for a NEW project.
+-- KG Material Pictionary: shared setup / safe upgrade
+-- This website stores NO price in its interface and never selects price fields.
+
 create extension if not exists pgcrypto;
-create schema if not exists private;
-revoke all on schema private from public;
-grant usage on schema private to authenticated;
 
-create table if not exists public.categories(
+create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),
   name_en text not null,
-  name_zh text not null,
-  sort_order integer not null default 100,
-  created_at timestamptz not null default now()
+  name_zh text,
+  sort_order integer not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
-create table if not exists public.products(
+create table if not exists public.products (
   id uuid primary key default gen_random_uuid(),
-  category_id uuid not null references public.categories(id) on delete restrict,
+  category_id uuid references public.categories(id) on delete restrict,
   name_en text not null,
-  name_zh text not null,
-  image_path text,
+  name_zh text,
   image_url text,
-  sort_order integer not null default 100,
-  created_at timestamptz not null default now()
+  sort_order integer not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
--- One product can have unlimited price combinations.
--- size_text is optional.
--- color_text is optional.
--- both may be blank.
-create table if not exists public.product_variants(
+create table if not exists public.product_variants (
   id uuid primary key default gen_random_uuid(),
   product_id uuid not null references public.products(id) on delete cascade,
-  size_text text,
-  color_text text,
-  price numeric(12,2) not null check(price >= 0),
-  price_unit text,
-  sort_order integer not null default 100,
-  created_at timestamptz not null default now()
+  manual_number text,
+  size text,
+  colour_en text,
+  colour_zh text,
+  sort_order integer not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
-create index if not exists products_category_idx on public.products(category_id);
-create index if not exists product_variants_product_idx on public.product_variants(product_id);
+-- Safe upgrades for databases created by an earlier version.
+alter table public.categories add column if not exists name_en text;
+alter table public.categories add column if not exists name_zh text;
+alter table public.categories add column if not exists sort_order integer not null default 0;
+alter table public.categories add column if not exists is_active boolean not null default true;
 
-create table if not exists public.admin_users(
+alter table public.products add column if not exists category_id uuid references public.categories(id) on delete restrict;
+alter table public.products add column if not exists name_en text;
+alter table public.products add column if not exists name_zh text;
+alter table public.products add column if not exists image_url text;
+alter table public.products add column if not exists sort_order integer not null default 0;
+alter table public.products add column if not exists is_active boolean not null default true;
+
+alter table public.product_variants add column if not exists product_id uuid references public.products(id) on delete cascade;
+alter table public.product_variants add column if not exists manual_number text;
+alter table public.product_variants add column if not exists size text;
+alter table public.product_variants add column if not exists colour_en text;
+alter table public.product_variants add column if not exists colour_zh text;
+alter table public.product_variants add column if not exists sort_order integer not null default 0;
+alter table public.product_variants add column if not exists is_active boolean not null default true;
+
+-- Copy common American-spelling columns into the website's colour columns when present.
+do $$
+begin
+  if exists (select 1 from information_schema.columns where table_schema='public' and table_name='product_variants' and column_name='color_en') then
+    execute 'update public.product_variants set colour_en = coalesce(colour_en, color_en)';
+  end if;
+  if exists (select 1 from information_schema.columns where table_schema='public' and table_name='product_variants' and column_name='color_zh') then
+    execute 'update public.product_variants set colour_zh = coalesce(colour_zh, color_zh)';
+  end if;
+end $$;
+
+drop index if exists public.product_variants_manual_unique_idx;
+create unique index product_variants_manual_unique_idx
+  on public.product_variants (lower(trim(manual_number)))
+  where manual_number is not null and trim(manual_number) <> '';
+
+create index if not exists products_category_idx on public.products(category_id);
+create index if not exists variants_product_idx on public.product_variants(product_id);
+
+create table if not exists public.admins (
   user_id uuid primary key references auth.users(id) on delete cascade,
   created_at timestamptz not null default now()
 );
 
-create or replace function private.is_admin()
-returns boolean language sql stable security definer set search_path=''
-as $$ select exists(select 1 from public.admin_users a where a.user_id=(select auth.uid())); $$;
-revoke all on function private.is_admin() from public,anon;
-grant execute on function private.is_admin() to authenticated;
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$ select exists(select 1 from public.admins where user_id = auth.uid()) $$;
+
+revoke all on function public.is_admin() from public;
+grant execute on function public.is_admin() to anon, authenticated;
 
 alter table public.categories enable row level security;
 alter table public.products enable row level security;
 alter table public.product_variants enable row level security;
-alter table public.admin_users enable row level security;
+alter table public.admins enable row level security;
 
-revoke all on table public.categories from anon,authenticated;
-revoke all on table public.products from anon,authenticated;
-revoke all on table public.product_variants from anon,authenticated;
-revoke all on table public.admin_users from anon,authenticated;
-grant select on table public.categories to anon,authenticated;
-grant select on table public.products to anon,authenticated;
-grant select on table public.product_variants to anon,authenticated;
-grant insert,update,delete on table public.categories to authenticated;
-grant insert,update,delete on table public.products to authenticated;
-grant insert,update,delete on table public.product_variants to authenticated;
-grant select on table public.admin_users to authenticated;
+drop policy if exists "Public reads categories" on public.categories;
+drop policy if exists "Public reads products" on public.products;
+drop policy if exists "Public reads variants" on public.product_variants;
+drop policy if exists "Admins manage categories" on public.categories;
+drop policy if exists "Admins manage products" on public.products;
+drop policy if exists "Admins manage variants" on public.product_variants;
+drop policy if exists "Admin reads own role" on public.admins;
 
-drop policy if exists "public read categories" on public.categories;
-drop policy if exists "admin write categories" on public.categories;
-drop policy if exists "public read products" on public.products;
-drop policy if exists "admin write products" on public.products;
-drop policy if exists "public read variants" on public.product_variants;
-drop policy if exists "admin write variants" on public.product_variants;
-drop policy if exists "read own admin row" on public.admin_users;
-create policy "public read categories" on public.categories for select to anon,authenticated using(true);
-create policy "admin write categories" on public.categories for all to authenticated using((select private.is_admin())) with check((select private.is_admin()));
-create policy "public read products" on public.products for select to anon,authenticated using(true);
-create policy "admin write products" on public.products for all to authenticated using((select private.is_admin())) with check((select private.is_admin()));
-create policy "public read variants" on public.product_variants for select to anon,authenticated using(true);
-create policy "admin write variants" on public.product_variants for all to authenticated using((select private.is_admin())) with check((select private.is_admin()));
-create policy "read own admin row" on public.admin_users for select to authenticated using((select auth.uid())=user_id);
+create policy "Public reads categories" on public.categories for select using (is_active = true or public.is_admin());
+create policy "Public reads products" on public.products for select using (is_active = true or public.is_admin());
+create policy "Public reads variants" on public.product_variants for select using (is_active = true or public.is_admin());
+create policy "Admins manage categories" on public.categories for all using (public.is_admin()) with check (public.is_admin());
+create policy "Admins manage products" on public.products for all using (public.is_admin()) with check (public.is_admin());
+create policy "Admins manage variants" on public.product_variants for all using (public.is_admin()) with check (public.is_admin());
+create policy "Admin reads own role" on public.admins for select using (user_id = auth.uid());
 
-insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
-values('product-images','product-images',true,5242880,array['image/jpeg','image/png','image/webp'])
-on conflict(id) do update set public=excluded.public,file_size_limit=excluded.file_size_limit,allowed_mime_types=excluded.allowed_mime_types;
+insert into storage.buckets (id, name, public)
+values ('product-images', 'product-images', true)
+on conflict (id) do update set public = true;
 
-drop policy if exists "admin upload product images" on storage.objects;
-drop policy if exists "admin update product images" on storage.objects;
-drop policy if exists "admin delete product images" on storage.objects;
-create policy "admin upload product images" on storage.objects for insert to authenticated with check(bucket_id='product-images' and (select private.is_admin()));
-create policy "admin update product images" on storage.objects for update to authenticated using(bucket_id='product-images' and (select private.is_admin())) with check(bucket_id='product-images' and (select private.is_admin()));
-create policy "admin delete product images" on storage.objects for delete to authenticated using(bucket_id='product-images' and (select private.is_admin()));
+drop policy if exists "Public reads product images" on storage.objects;
+drop policy if exists "Admins upload product images" on storage.objects;
+drop policy if exists "Admins update product images" on storage.objects;
+drop policy if exists "Admins delete product images" on storage.objects;
 
-insert into public.categories(name_en,name_zh,sort_order)
-select * from (values
- ('Board','板材',10),('Wall Plug','墙塞',20),('Wood Board','木板',30),('Metal','金属',40),('Screw','螺丝',50)
-) v(name_en,name_zh,sort_order)
-where not exists(select 1 from public.categories);
+create policy "Public reads product images" on storage.objects for select using (bucket_id = 'product-images');
+create policy "Admins upload product images" on storage.objects for insert to authenticated with check (bucket_id = 'product-images' and public.is_admin());
+create policy "Admins update product images" on storage.objects for update to authenticated using (bucket_id = 'product-images' and public.is_admin()) with check (bucket_id = 'product-images' and public.is_admin());
+create policy "Admins delete product images" on storage.objects for delete to authenticated using (bucket_id = 'product-images' and public.is_admin());
 
--- CREATE ADMIN:
--- Supabase -> Authentication -> Users -> Add User
--- Copy the UUID, then run:
--- insert into public.admin_users(user_id) values('PASTE-ADMIN-USER-UUID-HERE') on conflict do nothing;
+-- AFTER creating the admin user in Supabase Authentication, run this separately:
+-- insert into public.admins (user_id) values ('PASTE-AUTH-USER-UUID-HERE');
+
+-- Optional starter categories. Remove this block if your categories already exist.
+insert into public.categories (name_en, name_zh, sort_order)
+select v.name_en, v.name_zh, v.sort_order
+from (values
+  ('Board', '板材', 10),
+  ('Wall Plug', '墙塞', 20),
+  ('Wood Board', '木板', 30),
+  ('Metal', '金属', 40),
+  ('Screw', '螺丝', 50)
+) as v(name_en, name_zh, sort_order)
+where not exists (select 1 from public.categories c where lower(c.name_en) = lower(v.name_en));
